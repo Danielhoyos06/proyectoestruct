@@ -15,6 +15,8 @@ public:
     // - 0        → archivo vacío (sin '>')
     // - n >= 1   → n secuencias cargadas
     size_t cargar(const std::string& nombre_archivo);
+    const std::vector<Secuencia>& secuencias() const { return secuencias_; }
+    size_t contarSubsecuencia(const std::string& subseq) const;
 };
 
 #endif // FASTADB_H

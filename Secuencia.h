@@ -10,8 +10,8 @@ private:
 
 public:
     // Constructores
-    Sequence() = default;
-    Sequence(const std::string& desc, const std::string& seq);
+    Secuencia() = default;
+    Secuencia(const std::string& desc, const std::string& seq);
 
     // Getters
     const std::string& getDescription() const;

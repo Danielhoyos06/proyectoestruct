@@ -4,6 +4,9 @@
 #include <limits>
 #include "Fasta.h"
 
+// ----------------------------------------------------
+// Función auxiliar: imprime el resultado del comando cargar
+// ----------------------------------------------------
 static void imprimirResultadoCargar(const std::string& nombre, size_t count) {
     if (count == std::numeric_limits<size_t>::max()) {
         std::cout << "(archivo erróneo) " << nombre
@@ -21,6 +24,9 @@ static void imprimirResultadoCargar(const std::string& nombre, size_t count) {
     }
 }
 
+// ----------------------------------------------------
+// Función principal
+// ----------------------------------------------------
 int main() {
     Fasta db;
     std::string linea;
@@ -33,6 +39,9 @@ int main() {
         std::string cmd;
         iss >> cmd;
 
+        // -----------------------------------------------
+        // Comando: cargar nombre_archivo
+        // -----------------------------------------------
         if (cmd == "cargar") {
             std::string nombre;
             iss >> std::ws;
@@ -45,9 +54,81 @@ int main() {
 
             size_t count = db.cargar(nombre);
             imprimirResultadoCargar(nombre, count);
-        } else if (cmd == "salir" || cmd == "exit" || cmd == "quit") {
+        }
+
+        // -----------------------------------------------
+        // Comando: listar_secuencias
+        // Regla simple: b = número de caracteres != '-' ; si hay '-' → "al menos b".
+        // -----------------------------------------------
+        else if (cmd == "listar_secuencias") {
+            const auto& seqs = db.secuencias();
+
+            if (seqs.empty()) {
+                std::cout << "(no hay secuencias cargadas) No hay secuencias cargadas en memoria.\n";
+                continue;
+            }
+
+            std::cout << "(resultado exitoso) Hay " << seqs.size()
+                      << " secuencias cargadas en memoria:\n";
+
+            for (const auto& s : seqs) {
+                const std::string& desc = s.getDescription();
+                const std::string& data = s.getData();
+
+                bool tieneGuion = (data.find('-') != std::string::npos);
+                size_t b = 0;
+                for (unsigned char ch : data) if (ch != '-') ++b;
+
+                if (tieneGuion)
+                    std::cout << "Secuencia " << desc << " contiene al menos "
+                              << b << " bases.\n";
+                else
+                    std::cout << "Secuencia " << desc << " contiene "
+                              << b << " bases.\n";
+            }
+        }
+
+        // -----------------------------------------------
+        // Comando: es_subsecuencia <subsecuencia>
+      
+        // -----------------------------------------------
+        else if (cmd == "es_subsecuencia") {
+            std::string subseq;
+            iss >> std::ws;
+            std::getline(iss, subseq);
+
+            if (subseq.empty()) {
+                std::cout << "Uso: es_subsecuencia <subsecuencia>\n";
+                continue;
+            }
+
+            const auto& seqs = db.secuencias();
+            if (seqs.empty()) {
+                std::cout << "(no hay secuencias cargadas) No hay secuencias cargadas en memoria.\n";
+                continue;
+            }
+
+            size_t total = db.contarSubsecuencia(subseq);
+
+            if (total == 0) {
+                std::cout << "(la subsecuencia no existe) La subsecuencia dada no existe dentro de las secuencias cargadas en memoria.\n";
+            } else {
+                std::cout << "(varias subsecuencias) La subsecuencia dada se repite "
+                          << total << " veces dentro de las secuencias cargadas en memoria.\n";
+            }
+        }
+
+        // -----------------------------------------------
+        // Comando: salir
+        // -----------------------------------------------
+        else if (cmd == "salir" || cmd == "exit" || cmd == "quit") {
             break;
-        } else if (!cmd.empty()) {
+        }
+
+        // -----------------------------------------------
+        // Comando no reconocido
+        // -----------------------------------------------
+        else if (!cmd.empty()) {
             std::cout << "Comando no reconocido.\n";
         }
     }
