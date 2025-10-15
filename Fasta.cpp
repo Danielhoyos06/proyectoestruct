@@ -2,6 +2,7 @@
 #include <fstream>
 #include <limits>
 #include <cctype>
+#include <algorithm>
 
 
 namespace {
@@ -66,4 +67,17 @@ size_t Fasta::contarSubsecuencia(const std::string& subseq) const {
         total += contarOcurrencias(s.getData(), subseq);
     }
     return total;
+}
+std::unordered_map<char, size_t> Fasta::obtenerHistograma(const std::string& descripcion) const {
+    for (const auto& s : secuencias_) {
+        if (s.getDescription() == descripcion) {
+            std::unordered_map<char, size_t> h;
+            for (unsigned char c : s.getData()) {
+                if (c == '\n' || c == '\r' || c == ' ' || c == '\t') continue;
+                ++h[static_cast<char>(c)];
+            }
+            return h;
+        }
+    }
+    return {}; // Secuencia no encontrada
 }

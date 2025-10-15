@@ -2,6 +2,8 @@
 #include <sstream>
 #include <string>
 #include <limits>
+#include <vector>
+#include <algorithm>
 #include "Fasta.h"
 
 // ----------------------------------------------------
@@ -115,6 +117,53 @@ int main() {
             } else {
                 std::cout << "(varias subsecuencias) La subsecuencia dada se repite "
                           << total << " veces dentro de las secuencias cargadas en memoria.\n";
+            }
+        }
+
+        else if (cmd == "histograma") {
+            std::string nombre;
+            iss >> std::ws;
+            std::getline(iss, nombre);
+
+            if (nombre.empty()) {
+                std::cout << "Uso: histograma <descripcion_secuencia>\n";
+                continue;
+            }
+
+            const auto& seqs = db.secuencias();
+            if (seqs.empty()) {
+                std::cout << "(la secuencia no existe) Secuencia inválida.\n";
+                continue;
+            }
+
+            auto hist = db.obtenerHistograma(nombre);
+            if (hist.empty()) {
+                std::cout << "(la secuencia no existe) Secuencia inválida.\n";
+                continue;
+            }
+
+            std::cout << "(la secuencia existe)\n";
+
+            // Orden de impresión: A, C, G, T, U, etc.
+            const std::vector<char> preferidos = {
+                'A','C','G','T','U','R','Y','M','S','W','B','D','H','V','N','X','-'
+            };
+
+            for (char k : preferidos) {
+                auto it = hist.find(k);
+                if (it != hist.end()) {
+                    std::cout << k << " : " << it->second << "\n";
+                    hist.erase(it);
+                }
+            }
+
+            // Imprimir cualquier otro símbolo que haya quedado
+            if (!hist.empty()) {
+                std::vector<std::pair<char, size_t>> resto(hist.begin(), hist.end());
+                std::sort(resto.begin(), resto.end(),
+                          [](auto& a, auto& b){ return a.first < b.first; });
+                for (const auto& [base, freq] : resto)
+                    std::cout << base << " : " << freq << "\n";
             }
         }
 

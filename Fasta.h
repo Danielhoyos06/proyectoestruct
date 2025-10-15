@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "Secuencia.h"
+#include <unordered_map>
 
 class Fasta {
 private:
@@ -17,6 +18,7 @@ public:
     size_t cargar(const std::string& nombre_archivo);
     const std::vector<Secuencia>& secuencias() const { return secuencias_; }
     size_t contarSubsecuencia(const std::string& subseq) const;
+    std::unordered_map<char, size_t> obtenerHistograma(const std::string& descripcion) const;
 };
 
 #endif // FASTADB_H
