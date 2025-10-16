@@ -23,6 +23,16 @@ namespace {
         }
         return count;
     }
+        inline void hallarPosicionesrep(const std::string& text,
+                                          const std::string& needle,
+                                          std::vector<size_t>& pos_out) {
+        if (needle.empty()) return;
+        size_t pos = 0;
+        while ((pos = text.find(needle, pos)) != std::string::npos) {
+            pos_out.push_back(pos);
+            ++pos; // permitir solapamientos
+        }
+    }
 }
 
 size_t Fasta::cargar(const std::string& nombre_archivo) {
@@ -61,6 +71,29 @@ size_t Fasta::cargar(const std::string& nombre_archivo) {
     secuencias_.swap(temp); // Sobrescribe memoria con las nuevas
     return secuencias_.size();
 }
+
+bool Fasta::guardar(const std::string& nombre_archivo) const {
+    if (secuencias_.empty()) return false;
+
+    std::ofstream out(nombre_archivo);
+    if (!out) return false;
+
+    for (size_t i = 0; i < secuencias_.size(); ++i) {
+        out << ">" << secuencias_[i].getDescription() << "\n";
+        const std::string& data = secuencias_[i].getData();
+
+        size_t width = (i < lineWidths_.size() && lineWidths_[i] > 0)
+                        ? lineWidths_[i]
+                        : 60; // valor por defecto
+
+        for (size_t pos = 0; pos < data.size(); pos += width) {
+            out << data.substr(pos, width) << "\n";
+        }
+    }
+
+    return true;
+}
+
 size_t Fasta::contarSubsecuencia(const std::string& subseq) const {
     size_t total = 0;
     for (const auto& s : secuencias_) {
@@ -80,4 +113,31 @@ std::unordered_map<char, size_t> Fasta::obtenerHistograma(const std::string& des
         }
     }
     return {}; // Secuencia no encontrada
+} //para el desarrollo de esta funcion se hizo uso de una herramienta de IA (chatgpt) para generar el esqueleto y explicacion de la funcion 
+// con el prompt "elabora el esqueleto de una funcion que genere un histograma apartir de una secuencia de letras"
+
+size_t Fasta::enmascararSubsecuencia(const std::string& subseq) {
+    if (subseq.empty()) return 0;
+
+    size_t total = 0;
+    const size_t L = subseq.size();
+
+    for (auto& s : secuencias_) {
+        const std::string& original = s.getData();
+        std::vector<size_t> pos;
+        hallarPosicionesrep(original, subseq, pos);
+
+        if (!pos.empty()) {
+            std::string masked = original; // trabajamos sobre una copia para no romper la búsqueda
+            for (size_t p : pos) {
+                for (size_t i = 0; i < L && p + i < masked.size(); ++i) {
+                    masked[p + i] = 'X';
+                }
+            }
+            s.setData(masked);
+            total += pos.size();
+        }
+    }
+
+    return total;
 }

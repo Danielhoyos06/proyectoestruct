@@ -9,16 +9,16 @@
 class Fasta {
 private:
     std::vector<Secuencia> secuencias_; // Estructura lineal para almacenar las secuencias
+    std::vector<size_t> lineWidths_; 
 
 public:
-    // Carga un archivo FASTA y devuelve:
-    // - SIZE_MAX → error de E/S (no se puede leer)
-    // - 0        → archivo vacío (sin '>')
-    // - n >= 1   → n secuencias cargadas
-    size_t cargar(const std::string& nombre_archivo);
-    const std::vector<Secuencia>& secuencias() const { return secuencias_; }
-    size_t contarSubsecuencia(const std::string& subseq) const;
-    std::unordered_map<char, size_t> obtenerHistograma(const std::string& descripcion) const;
+    
+    size_t cargar(const std::string& nombre_archivo); //funcion para cargar un archivo 
+    bool guardar(const std::string& nombre_archivo) const;//funcion para guardar en un archivo las secuencisa con la respetiva subseq enmmascarada
+    const std::vector<Secuencia>& secuencias() const { return secuencias_; } //funcion para listar
+    size_t contarSubsecuencia(const std::string& subseq) const; //funcion para hallar si una subseq dada por el usuario existe 
+    std::unordered_map<char, size_t> obtenerHistograma(const std::string& descripcion) const;//funcion para generar el histograma
+    size_t enmascararSubsecuencia(const std::string& subseq);//funcion para enmascarar una subseq dada por el usuario
 };
 
 #endif // FASTADB_H

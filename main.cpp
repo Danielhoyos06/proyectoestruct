@@ -6,9 +6,28 @@
 #include <algorithm>
 #include "Fasta.h"
 
+
+static void mostrarMenu() {
+    std::cout
+        << "================= MENU =================\n"
+        << "Comandos disponibles:\n"
+        << "  cargar <nombre_archivo>        : Carga un archivo FASTA en memoria\n"
+        << "  listar_secuencias              : Muestra la cantidad y longitud de cada secuencia\n"
+        << "  es_subsecuencia <subsecuencia> : Cuenta repeticiones de una subsecuencia (solapadas)\n"
+        << "  histograma <descripcion>       : Imprime el histograma de la secuencia indicada\n"
+        << "  enmascarar <subsecuencia>      : Reemplaza cada ocurrencia por 'X' en todas las secuencias\n"
+        << "  guardar <nombre_archivo>       : Guarda las secuencias actuales en un archivo FASTA\n"
+        << "  salir                          : Termina el programa\n"
+        << "========================================\n";
+}
+
+
 // ----------------------------------------------------
 // Función auxiliar: imprime el resultado del comando cargar
 // ----------------------------------------------------
+
+
+
 static void imprimirResultadoCargar(const std::string& nombre, size_t count) {
     if (count == std::numeric_limits<size_t>::max()) {
         std::cout << "(archivo erróneo) " << nombre
@@ -26,12 +45,12 @@ static void imprimirResultadoCargar(const std::string& nombre, size_t count) {
     }
 }
 
-// ----------------------------------------------------
-// Función principal
-// ----------------------------------------------------
+
 int main() {
     Fasta db;
     std::string linea;
+
+    mostrarMenu();
 
     while (true) {
         std::cout << "\nComando: ";
@@ -88,7 +107,7 @@ int main() {
                     std::cout << "Secuencia " << desc << " contiene "
                               << b << " bases.\n";
             }
-        }
+        }// se uso una herramineta de IA (chatgpt) para la elaboracion del esqueleto de esta funcion(funcion num 3 de las funciopnes del TAD Fasta) con el prompt de "teniendo en cuenta esta funcion(funcion), genera el esqueleto para su implementacion en el siguiente main (todo el main) "
 
         // -----------------------------------------------
         // Comando: es_subsecuencia <subsecuencia>
@@ -144,10 +163,9 @@ int main() {
 
             std::cout << "(la secuencia existe)\n";
 
-            // Orden de impresión: A, C, G, T, U, etc.
             const std::vector<char> preferidos = {
                 'A','C','G','T','U','R','Y','M','S','W','B','D','H','V','N','X','-'
-            };
+            }; //se usa para mostrar el orden de impresion del histograma 
 
             for (char k : preferidos) {
                 auto it = hist.find(k);
@@ -167,20 +185,64 @@ int main() {
             }
         }
 
-        // -----------------------------------------------
-        // Comando: salir
-        // -----------------------------------------------
+          else if (cmd == "enmascarar") {
+            std::string subseq;
+            iss >> std::ws;
+            std::getline(iss, subseq);
+
+            if (subseq.empty()) {
+                std::cout << "Uso: enmascarar <subsecuencia>\n";
+                continue;
+            }
+
+            const auto& seqs = db.secuencias();
+            if (seqs.empty()) {
+                std::cout << "(no hay secuencias cargadas) No hay secuencias cargadas en memoria.\n";
+                continue;
+            }
+
+            size_t s = db.enmascararSubsecuencia(subseq);
+
+            if (s == 0) {
+                std::cout << "(no se enmascararon subsecuencias) La subsecuencia dada no existe dentro de las secuencias cargadas en memoria, por tanto no se enmascara nada.\n";
+            } else {
+                std::cout << "(varias subsecuencias esmascaradas) " // (respeto la ortografía exacta que pediste)
+                          << s << " subsecuencias han sido enmascaradas dentro de las secuencias cargadas en memoria.\n";
+            }
+        }
+        else if (cmd == "guardar") {
+            std::string nombre;
+            iss >> std::ws;
+            std::getline(iss, nombre);
+            if (nombre.empty()) {
+                std::cout << "Uso: guardar <nombre_archivo>\n";
+                continue;
+            }
+
+            const auto& seqs = db.secuencias();
+            if (seqs.empty()) {
+                std::cout << "(no hay secuencias cargadas) No hay secuencias cargadas en memoria.\n";
+                continue;
+            }
+
+            bool ok = db.guardar(nombre);
+            if (ok)
+                std::cout << "(escritura exitosa) Las secuencias han sido guardadas en "
+                          << nombre << " .\n";
+            else
+                std::cout << "(problemas en archivo) Error guardando en "
+                          << nombre << " .\n";
+        }
+
         else if (cmd == "salir" || cmd == "exit" || cmd == "quit") {
             break;
         }
 
-        // -----------------------------------------------
-        // Comando no reconocido
-        // -----------------------------------------------
-        else if (!cmd.empty()) {
+        else {
             std::cout << "Comando no reconocido.\n";
         }
     }
-
     return 0;
 }
+
+       
