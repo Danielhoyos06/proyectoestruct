@@ -262,7 +262,6 @@ int main() {
                 std::cout << "(codificación exitosa) Secuencias codificadas y almacenadas en "
                           << nombre << " .\n";
         }
-      
 
         else if (cmd == "salir" || cmd == "exit" || cmd == "quit") {
             break;

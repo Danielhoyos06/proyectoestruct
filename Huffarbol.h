@@ -28,7 +28,6 @@ public:
     // Opcionales: helpers para probar
     std::string encode(const std::string& text) const;
     std::string decode(const std::string& bits) const;
-
     HuffmanNode* getRoot() const { return root; }
 };
 
