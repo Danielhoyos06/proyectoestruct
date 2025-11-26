@@ -5,6 +5,8 @@
 #include <vector>
 #include "Secuencia.h"
 #include <unordered_map>
+#include <cstdint>
+#include "Huffarbol.h"
 
 class Fasta {
 private:
@@ -19,6 +21,8 @@ public:
     size_t contarSubsecuencia(const std::string& subseq) const; //funcion para hallar si una subseq dada por el usuario existe 
     std::unordered_map<char, size_t> obtenerHistograma(const std::string& descripcion) const;//funcion para generar el histograma
     size_t enmascararSubsecuencia(const std::string& subseq);//funcion para enmascarar una subseq dada por el usuario
+    bool codificarHuffman(const std::string& nombre_archivo) const;
+    //bool decodificarHuffman(const std::string& nombre_archivo);
 };
 
 #endif // FASTADB_H

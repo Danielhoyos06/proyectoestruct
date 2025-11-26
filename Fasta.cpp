@@ -1,8 +1,12 @@
 #include "Fasta.h"
+#include "Huffarbol.h"
+
 #include <fstream>
 #include <limits>
 #include <cctype>
 #include <algorithm>
+#include <unordered_map>
+#include <cstdint>
 
 
 namespace {
@@ -141,3 +145,97 @@ size_t Fasta::enmascararSubsecuencia(const std::string& subseq) {
 
     return total;
 }
+bool Fasta::codificarHuffman(const std::string& nombre_archivo) const {
+    if (secuencias_.empty()) {
+        // El main imprimirá "(no hay secuencias cargadas) ..."
+        return false;
+    }
+
+    // 1) Construir tabla de frecuencias global
+    std::unordered_map<char, uint64_t> freq;
+    for (const auto& s : secuencias_) {
+        for (unsigned char c : s.getData()) {
+            ++freq[static_cast<char>(c)];
+        }
+    }
+    if (freq.empty()) return false;
+
+    // 2) Construir árbol de Huffman
+    HuffmanTree ht;
+    ht.build(freq);
+    const auto& codes = ht.getCodes();
+    if (codes.empty()) return false;
+
+    // 3) Abrir archivo binario de salida
+    std::ofstream out(nombre_archivo, std::ios::binary);
+    if (!out) return false;
+
+    // 4) Escribir la tabla de símbolos y frecuencias
+    //    n: número de símbolos distintos (2 bytes)
+    std::vector<std::pair<char, uint64_t>> symbols(freq.begin(), freq.end());
+    std::sort(symbols.begin(), symbols.end(),
+              [](const auto& a, const auto& b){ return a.first < b.first; });
+
+    uint16_t n_symbols = static_cast<uint16_t>(symbols.size());
+    out.write(reinterpret_cast<const char*>(&n_symbols), sizeof(n_symbols));
+
+    // Cada entrada: 1 byte de símbolo + 8 bytes de frecuencia (uint64_t)
+    for (const auto& [ch, f] : symbols) {
+        out.write(reinterpret_cast<const char*>(&ch), 1);
+        out.write(reinterpret_cast<const char*>(&f), sizeof(f));
+    }
+
+    // 5) Número de secuencias (4 bytes)
+    uint32_t n_seq = static_cast<uint32_t>(secuencias_.size());
+    out.write(reinterpret_cast<const char*>(&n_seq), sizeof(n_seq));
+
+    // 6) Para cada secuencia: nombre, longitud, ancho de línea y datos codificados
+    for (size_t i = 0; i < secuencias_.size(); ++i) {
+        const auto& seq  = secuencias_[i];
+        const std::string& nombre = seq.getDescription();
+        const std::string& data   = seq.getData();
+
+        // ℓ: longitud del nombre (2 bytes)
+        uint16_t name_len = static_cast<uint16_t>(nombre.size());
+        out.write(reinterpret_cast<const char*>(&name_len), sizeof(name_len));
+        out.write(nombre.data(), name_len);
+
+        // u: longitud de la secuencia en bases (8 bytes)
+        uint64_t len_bases = static_cast<uint64_t>(data.size());
+        out.write(reinterpret_cast<const char*>(&len_bases), sizeof(len_bases));
+
+        // z: ancho de línea (2 bytes)
+        uint16_t width = 60;
+        if (i < lineWidths_.size() && lineWidths_[i] > 0) {
+            width = lineWidths_[i];
+        }
+        out.write(reinterpret_cast<const char*>(&width), sizeof(width));
+
+        // Codificar la secuencia completa en bits usando la tabla de Huffman
+        std::string bits;
+        bits.reserve(data.size() * 4); // tamaño aproximado
+        for (char c : data) {
+            bits += codes.at(c); // 'at' es seguro: todos los símbolos están en la tabla
+        }
+
+        // Rellenar con '0' hasta múltiplo de 8
+        size_t padding = (8 - (bits.size() % 8)) % 8;
+        bits.append(padding, '0');
+
+        // Convertir cada bloque de 8 bits en un byte
+        for (size_t pos = 0; pos < bits.size(); pos += 8) {
+            uint8_t byte = 0;
+            for (int k = 0; k < 8; ++k) {
+                if (bits[pos + k] == '1') {
+                    byte |= static_cast<uint8_t>(1u << (7 - k));
+                }
+            }
+            out.write(reinterpret_cast<const char*>(&byte), 1);
+        }
+    }
+
+    bool ok = out.good();
+    out.close();
+    return ok;
+}
+

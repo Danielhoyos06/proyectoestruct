@@ -17,6 +17,8 @@ static void mostrarMenu() {
         << "  histograma <descripcion>       : Imprime el histograma de la secuencia indicada\n"
         << "  enmascarar <subsecuencia>      : Reemplaza cada ocurrencia por 'X' en todas las secuencias\n"
         << "  guardar <nombre_archivo>       : Guarda las secuencias actuales en un archivo FASTA\n"
+        << "  codificar <nombre_archivo.fabin> : Codificar secuencias en binario Huffman\n"
+        << "decodificar <archivo.fabin>\n"
         << "  salir                          : Termina el programa\n"
         << "========================================\n";
 }
@@ -238,10 +240,43 @@ int main() {
             break;
         }
 
+       
+        else if (cmd == "codificar") {
+            std::string nombre;
+            iss >> std::ws;
+            std::getline(iss, nombre);
+            if (nombre.empty()) {
+                std::cout << "Uso: codificar <nombre_archivo.fabin>\n";
+                continue;
+            }
+            const auto& seqs = db.secuencias();
+            if (seqs.empty()) {
+                std::cout << "(no hay secuencias cargadas) No hay secuencias cargadas en memoria.\n";
+                continue;
+            }
+            bool ok = db.codificarHuffman(nombre);
+            if (!ok)
+                std::cout << "(mensaje de error) No se pueden guardar las secuencias cargadas en "
+                          << nombre << " .\n";
+            else
+                std::cout << "(codificación exitosa) Secuencias codificadas y almacenadas en "
+                          << nombre << " .\n";
+        }
+      
+
+        else if (cmd == "salir" || cmd == "exit" || cmd == "quit") {
+            break;
+        }
+
         else {
             std::cout << "Comando no reconocido.\n";
+            mostrarMenu();
         }
+        
+    
     }
+    
+
     return 0;
 }
 
