@@ -22,7 +22,9 @@ public:
     std::unordered_map<char, size_t> obtenerHistograma(const std::string& descripcion) const;//funcion para generar el histograma
     size_t enmascararSubsecuencia(const std::string& subseq);//funcion para enmascarar una subseq dada por el usuario
     bool codificarHuffman(const std::string& nombre_archivo) const;
-    //bool decodificarHuffman(const std::string& nombre_archivo);
+    bool decodificarHuffman(const std::string& nombre_archivo); // ← NUEVA
+    
+  
 };
 
 #endif // FASTADB_H

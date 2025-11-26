@@ -238,4 +238,103 @@ bool Fasta::codificarHuffman(const std::string& nombre_archivo) const {
     out.close();
     return ok;
 }
+bool Fasta::decodificarHuffman(const std::string& nombre_archivo) {
+    std::ifstream in(nombre_archivo, std::ios::binary);
+    if (!in) return false;
 
+    // 1) Leer número de símbolos (tabla Huffman)
+    uint16_t n_symbols = 0;
+    if (!in.read(reinterpret_cast<char*>(&n_symbols), sizeof(n_symbols))) return false;
+    if (n_symbols == 0) return false;
+
+    // 2) Leer pares (símbolo, frecuencia)
+    std::unordered_map<char, uint64_t> freq;
+    for (uint16_t i = 0; i < n_symbols; ++i) {
+        char ch;
+        uint64_t f;
+        if (!in.read(reinterpret_cast<char*>(&ch), 1)) return false;
+        if (!in.read(reinterpret_cast<char*>(&f), sizeof(f))) return false;
+        freq[ch] = f;
+    }
+
+    // 3) Reconstruir árbol de Huffman
+    HuffmanTree ht;
+    ht.build(freq);
+    HuffmanNode* root = ht.getRoot();
+    if (!root || ht.getCodes().empty()) return false;
+
+    // 4) Leer número de secuencias
+    uint32_t n_seq = 0;
+    if (!in.read(reinterpret_cast<char*>(&n_seq), sizeof(n_seq))) return false;
+
+    // Nuevos contenedores (mismos tipos que en Fasta.h)
+    std::vector<Secuencia> nuevasSecuencias;
+    std::vector<size_t>    nuevosWidths;
+    nuevasSecuencias.reserve(n_seq);
+    nuevosWidths.reserve(n_seq);
+
+    // --- Lector de bits sobre el archivo ---
+    uint8_t currentByte = 0;
+    int bitsLeft = 0;  // cuántos bits quedan en currentByte
+
+    auto readBit = [&]() -> int {
+        if (bitsLeft == 0) {
+            if (!in.read(reinterpret_cast<char*>(&currentByte), 1)) {
+                return -1; // EOF o error
+            }
+            bitsLeft = 8;
+        }
+        int bit = (currentByte >> 7) & 1; // bit más significativo
+        currentByte <<= 1;
+        --bitsLeft;
+        return bit;
+    };
+
+    // 5) Procesar cada secuencia
+    for (uint32_t si = 0; si < n_seq; ++si) {
+        // 5.1 Longitud del nombre
+        uint16_t name_len = 0;
+        if (!in.read(reinterpret_cast<char*>(&name_len), sizeof(name_len))) return false;
+
+        std::string nombre(name_len, '\0');
+        if (!in.read(&nombre[0], name_len)) return false;
+
+        // 5.2 Longitud de la secuencia en bases
+        uint64_t len_bases = 0;
+        if (!in.read(reinterpret_cast<char*>(&len_bases), sizeof(len_bases))) return false;
+
+        // 5.3 Ancho de línea original
+        uint16_t width16 = 0;
+        if (!in.read(reinterpret_cast<char*>(&width16), sizeof(width16))) return false;
+        size_t width = static_cast<size_t>(width16);
+
+        // 5.4 Decodificar exactamente len_bases símbolos usando el árbol
+        std::string decoded;
+        decoded.reserve(static_cast<size_t>(len_bases));
+
+        for (uint64_t k = 0; k < len_bases; ++k) {
+            HuffmanNode* node = root;
+            while (node && !node->isLeaf()) {
+                int bit = readBit();
+                if (bit < 0) return false; // archivo truncado
+
+                node = (bit == 0) ? node->left : node->right;
+            }
+            if (!node) return false; // árbol inconsistent / bits corruptos
+
+            decoded.push_back(node->symbol);
+        }
+
+        // Descartar los bits de padding que quedaron en el último byte
+        bitsLeft = 0;
+
+        nuevasSecuencias.emplace_back(nombre, decoded);
+        nuevosWidths.push_back(width);
+    }
+
+    // 6) Reemplazar el contenido en memoria solo si TODO salió bien
+    secuencias_.swap(nuevasSecuencias);
+    lineWidths_.swap(nuevosWidths);
+
+    return true;
+}

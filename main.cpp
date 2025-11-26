@@ -263,6 +263,29 @@ int main() {
                           << nombre << " .\n";
         }
 
+        else if (cmd == "decodificar") {
+    std::string nombre;
+    iss >> std::ws;
+    std::getline(iss, nombre);
+
+    if (nombre.empty()) {
+        std::cout << "Uso: decodificar <archivo.fabin>\n";
+        continue;
+    }
+
+    bool ok = db.decodificarHuffman(nombre);
+    if (!ok) {
+        std::cout << "(problemas en archivo) Error cargando desde "
+                  << nombre << " .\n";
+    } else {
+        std::cout << "(decodificación exitosa) "
+                  << db.secuencias().size()
+                  << " secuencias cargadas en memoria desde "
+                  << nombre << " .\n";
+    }
+}
+
+
         else if (cmd == "salir" || cmd == "exit" || cmd == "quit") {
             break;
         }

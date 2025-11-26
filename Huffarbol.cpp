@@ -77,3 +77,4 @@ void HuffmanTree::freeTree(HuffmanNode* node) {
     freeTree(node->right);
     delete node;
 }
+
